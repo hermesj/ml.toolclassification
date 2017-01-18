@@ -16,17 +16,8 @@ import de.uni_koeln.spinfo.ml.toolclassification.data.Tool;
  */
 public class VectorBuilder {
 	
-	private Map<Tool, int[]> toolsWithVectors;
-	
-	/**
-	 * Initializes a VectorBuilder for the specified List of Tools
-	 * @param toolsWithContexts
-	 */
-	public VectorBuilder(List<Tool> toolsWithContexts){
-		this.buildVectors(toolsWithContexts, getTypesList(toolsWithContexts));
-	}
-	
-	private List<String> getTypesList(List<Tool> toolsWithContexts){
+
+	private static List<String> getTypesList(List<Tool> toolsWithContexts){
 		Set<String> types = new TreeSet<String>();
 		for (Tool tool : toolsWithContexts) {
 			List<String> words = Tokenizer.tokenize(tool.getContext());
@@ -37,8 +28,8 @@ public class VectorBuilder {
 		return new ArrayList<String>(types);
 	} 
 	
-	private void buildVectors(List<Tool> toolsWithContexts, List<String> types){
-		toolsWithVectors = new HashMap<Tool, int[]>();
+	private static Map<Tool, int[]> buildVectors(List<Tool> toolsWithContexts, List<String> types){
+		Map<Tool, int[]> toolsWithVectors = new HashMap<Tool, int[]>();
 		for (Tool tool : toolsWithContexts) {
 			Map<String, Integer> typeCounts = Tokenizer.getTypeCounts(tool.getContext());
 			int[] vector = new int[types.size()];
@@ -50,14 +41,15 @@ public class VectorBuilder {
 			}
 			toolsWithVectors.put(tool, vector);
 		}
+		return toolsWithVectors;
 	}	
-	
+
 	/**
-	 * Returns the feature vector for the specified Tool
+	 * Returns the feature vectors
 	 * @param tool 
 	 * @return feature vector for the specified Tool
 	 */
-	public int[] getVector(Tool tool){
-		return toolsWithVectors.get(tool);
+	public static Map<Tool, int[]> getToolsWithVector(List<Tool> toolsWithContexts) {
+		return buildVectors(toolsWithContexts, getTypesList(toolsWithContexts));
 	}
 }

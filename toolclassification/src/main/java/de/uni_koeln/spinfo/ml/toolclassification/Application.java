@@ -4,13 +4,24 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import de.uni_koeln.spinfo.ml.toolclassification.components.DataImporter;
 import de.uni_koeln.spinfo.ml.toolclassification.components.VectorBuilder;
+import de.uni_koeln.spinfo.ml.toolclassification.components.WEKAConverter;
 import de.uni_koeln.spinfo.ml.toolclassification.components.crossvalidation.CrossvalidationGroupBuilder;
 import de.uni_koeln.spinfo.ml.toolclassification.components.crossvalidation.TrainingTestSets;
 import de.uni_koeln.spinfo.ml.toolclassification.data.BayesModel;
 import de.uni_koeln.spinfo.ml.toolclassification.data.Tool;
+import weka.classifiers.Classifier;
+import weka.classifiers.bayes.NaiveBayes;
+import weka.classifiers.evaluation.Evaluation;
+import weka.core.Attribute;
+import weka.core.DenseInstance;
+import weka.core.FastVector;
+import weka.core.Instance;
+import weka.core.Instances;
+import weka.core.converters.ConverterUtils.DataSource;
 
 public class Application {
 
@@ -36,17 +47,6 @@ public class Application {
 		//System.out.println("BufferList size: " + bufferList.size());
 		System.out.println("Before cleanup: " + tools.size());
 		tools= bufferList;
-		System.out.println("After cleanup: " + tools.size());
-		
-		VectorBuilder vb = new VectorBuilder(tools);
-//		for (Tool tool : tools) {
-//			int[] vec = vb.getVector(tool);
-//			for(int i=0; i<vec.length; i++){
-//				if(vec[i]!=0)
-//					System.out.print(vec[i] + "\t");
-//			}
-//			System.out.println();
-//		}
 		
 		int cvgroups = 10;
 		CrossvalidationGroupBuilder<Tool> cvgb = new CrossvalidationGroupBuilder<Tool>(tools, cvgroups);
@@ -57,9 +57,14 @@ public class Application {
 			//System.out.println(tts.getTestSet().size()); //--> Classify 
 			//--> Evaluate
 			System.out.println();
-			
-			double singleResult = performClassification(tts);
-			overallResult += singleResult;
+			try {
+				performKKNClassification(tts);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+//			double singleResult = performBayesClassification(tts);
+//			overallResult += singleResult;
 		}
 		//--> Calculate mean
 		overallResult = overallResult/cvgroups;
@@ -68,9 +73,32 @@ public class Application {
 		//End
 	}
 	
-	private static double performClassification(TrainingTestSets<Tool> tts) {
+	private static void performKKNClassification(TrainingTestSets<Tool> tts) throws Exception {
+		
+		WEKAConverter converter = new WEKAConverter();
+		
+		//Training
+		Map<Tool,int[]> trainingSet = VectorBuilder.getToolsWithVector(tts.getTrainingSet());
+		Instances wekaTrainingSet = converter.convertToolsVectorToWekaModel(trainingSet, "training");
+		
+		//Test
+		Map<Tool,int[]> testSet = VectorBuilder.getToolsWithVector(tts.getTestSet());
+		Instances wekaTestSet = converter.convertToolsVectorToWekaModel(testSet, "training");
+		
+		Classifier cModel = (Classifier)new NaiveBayes();
+		cModel.buildClassifier(wekaTrainingSet);
+		
+		 Evaluation eTest = new Evaluation(wekaTestSet);
+		 eTest.evaluateModel(cModel, wekaTestSet);
+		 
+		 String strSummary = eTest.toSummaryString();
+		 System.out.println("Summary" + strSummary);
+	}
+
+	private static double performBayesClassification(TrainingTestSets<Tool> tts) {
 		
 		BayesModel bayes = new BayesModel();
+		
 		
 		//Train
 		List<Tool> trainingSet = tts.getTrainingSet();
@@ -122,6 +150,5 @@ public class Application {
 		System.out.println();
 		return accuracy;
 	}
-
 
 }

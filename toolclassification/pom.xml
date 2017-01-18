@@ -3,4 +3,11 @@
   <groupId>de.uni-koeln.spinfo</groupId>
   <artifactId>ml.toolclassification</artifactId>
   <version>0.0.1-SNAPSHOT</version>
+  <dependencies>
+  	<dependency>
+  		<groupId>nz.ac.waikato.cms.weka</groupId>
+  		<artifactId>weka-stable</artifactId>
+  		<version>3.8.0</version>
+  	</dependency>
+  </dependencies>
 </project>
