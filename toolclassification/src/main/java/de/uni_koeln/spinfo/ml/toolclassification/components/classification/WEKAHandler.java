@@ -1,4 +1,4 @@
-package de.uni_koeln.spinfo.ml.toolclassification.components;
+package de.uni_koeln.spinfo.ml.toolclassification.components.classification;
 
 import java.util.ArrayList;
 import java.util.Map;

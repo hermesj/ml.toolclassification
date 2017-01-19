@@ -1,4 +1,4 @@
-package de.uni_koeln.spinfo.ml.toolclassification.components;
+package de.uni_koeln.spinfo.ml.toolclassification.components.preprocessing;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import de.uni_koeln.spinfo.ml.toolclassification.components.Tokenizer;
 import de.uni_koeln.spinfo.ml.toolclassification.data.Tool;
 
 /**

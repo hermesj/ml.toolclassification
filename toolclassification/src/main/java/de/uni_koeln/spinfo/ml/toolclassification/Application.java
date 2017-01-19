@@ -8,10 +8,10 @@ import java.util.Map;
 import java.util.Set;
 
 import de.uni_koeln.spinfo.ml.toolclassification.components.DataImporter;
-import de.uni_koeln.spinfo.ml.toolclassification.components.VectorBuilder;
-import de.uni_koeln.spinfo.ml.toolclassification.components.WEKAHandler;
+import de.uni_koeln.spinfo.ml.toolclassification.components.classification.WEKAHandler;
 import de.uni_koeln.spinfo.ml.toolclassification.components.crossvalidation.CrossvalidationGroupBuilder;
 import de.uni_koeln.spinfo.ml.toolclassification.components.crossvalidation.TrainingTestSets;
+import de.uni_koeln.spinfo.ml.toolclassification.components.preprocessing.VectorBuilder;
 import de.uni_koeln.spinfo.ml.toolclassification.data.BayesModel;
 import de.uni_koeln.spinfo.ml.toolclassification.data.Tool;
 import weka.classifiers.Classifier;
@@ -31,23 +31,15 @@ public class Application {
 		System.out.println("----------------------------");
 		DataImporter di = new DataImporter();
 		di.parseToolsAndClassesFromFile("src/main/resources/data/DatenTools.tsv");
-//		
-//		Set<String> keySet = di.getTools().keySet();
-//		for (String string : keySet) {
-//			System.out.println(di.getTools().get(string).getParentClassId());
-//		}
 		
 		List<Tool> tools = new ArrayList<Tool>(di.getTools().values());
-		List<Tool> bufferList = new ArrayList<Tool>();
-		for (Tool tool : tools) {
-			if(tool.getContext()!=null){
-				//System.out.println(tool.getContext());
-				bufferList.add(tool);
-			}
-		}
-		//System.out.println("BufferList size: " + bufferList.size());
-		System.out.println("Before cleanup: " + tools.size());
-		tools= bufferList;
+
+//		//System.out.println("BufferList size: " + bufferList.size());
+//		System.out.println("Before cleanup: " + tools.size());
+//		tools= bufferList;
+//		System.out.println("After cleanup: " + tools.size());
+
+		
 		
 		int cvgroups = 10;
 		CrossvalidationGroupBuilder<Tool> cvgb = new CrossvalidationGroupBuilder<Tool>(tools, cvgroups);
