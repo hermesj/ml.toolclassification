@@ -52,4 +52,15 @@ public class VectorBuilder {
 	public static Map<Tool, int[]> getToolsWithVector(List<Tool> toolsWithContexts) {
 		return buildVectors(toolsWithContexts, getTypesList(toolsWithContexts));
 	}
+	
+	/**
+	 * calculates the dimension of the vector
+	 * @param toolsVector the tool vector to be calculated 
+	 * @return dimension
+	 */
+	public static int calculateDimension(Map<Tool, int[]> toolsVector) {
+		//as they have all the same dimension, it's enough to take
+		//dimension from first array
+		return toolsVector.entrySet().iterator().next().getValue().length;
+	}
 }

@@ -5,10 +5,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import de.uni_koeln.spinfo.ml.toolclassification.components.DataImporter;
 import de.uni_koeln.spinfo.ml.toolclassification.components.VectorBuilder;
-import de.uni_koeln.spinfo.ml.toolclassification.components.WEKAConverter;
+import de.uni_koeln.spinfo.ml.toolclassification.components.WEKAHandler;
 import de.uni_koeln.spinfo.ml.toolclassification.components.crossvalidation.CrossvalidationGroupBuilder;
 import de.uni_koeln.spinfo.ml.toolclassification.components.crossvalidation.TrainingTestSets;
 import de.uni_koeln.spinfo.ml.toolclassification.data.BayesModel;
@@ -58,7 +59,7 @@ public class Application {
 			//--> Evaluate
 			System.out.println();
 			try {
-				performKKNClassification(tts);
+				performKKNClassification(tts, di.getParentClasses().keySet());
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -73,20 +74,28 @@ public class Application {
 		//End
 	}
 	
-	private static void performKKNClassification(TrainingTestSets<Tool> tts) throws Exception {
+	private static void performKKNClassification(TrainingTestSets<Tool> tts, Set<Integer> classValues) throws Exception {
 		
-		WEKAConverter converter = new WEKAConverter();
+		//training vector
+		Map<Tool,int[]> trainingSet = VectorBuilder.getToolsWithVector(tts.getTrainingSet().subList(0, 3));
 		
-		//Training
-		Map<Tool,int[]> trainingSet = VectorBuilder.getToolsWithVector(tts.getTrainingSet());
-		Instances wekaTrainingSet = converter.convertToolsVectorToWekaModel(trainingSet, "training");
+		//test vector
+		Map<Tool,int[]> testSet = VectorBuilder.getToolsWithVector(tts.getTestSet().subList(0, 100));
 		
-		//Test
-		Map<Tool,int[]> testSet = VectorBuilder.getToolsWithVector(tts.getTestSet());
-		Instances wekaTestSet = converter.convertToolsVectorToWekaModel(testSet, "training");
+		//transform classValues 
+		ArrayList<String> stringClassVal = new ArrayList<String>();
+		classValues.forEach((i) -> stringClassVal.add(i.toString()));
 		
+		WEKAHandler wekaHandler = new WEKAHandler(VectorBuilder.calculateDimension(trainingSet), stringClassVal);
+		
+		//build weka training set
+		Instances wekaTrainingSet = wekaHandler.convertToolsVectorToWekaModel(trainingSet, "training");
+				
 		Classifier cModel = (Classifier)new NaiveBayes();
 		cModel.buildClassifier(wekaTrainingSet);
+		
+		//build wek test set
+		Instances wekaTestSet = wekaHandler.convertToolsVectorToWekaModel(testSet, "training");
 		
 		 Evaluation eTest = new Evaluation(wekaTestSet);
 		 eTest.evaluateModel(cModel, wekaTestSet);
