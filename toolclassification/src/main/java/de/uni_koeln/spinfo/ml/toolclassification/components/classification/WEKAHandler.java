@@ -88,6 +88,11 @@ public class WEKAHandler {
 			dataSet.add(record);
 		});
 	}
+
+	public void processTestClassification() {
+		// TODO Auto-generated method stub
+		
+	}
 	
 	
 }
