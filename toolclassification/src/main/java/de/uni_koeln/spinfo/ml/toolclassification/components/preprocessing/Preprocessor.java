@@ -13,11 +13,11 @@ import weka.core.tokenizers.WordTokenizer;
  * @author vetemi
  *
  */
-public class PreprocessingHandler {
+public class Preprocessor {
 	
 	private Tokenizer tokenizer;
 	
-	public PreprocessingHandler() {
+	public Preprocessor() {
 		tokenizer = new WordTokenizer();		
 	}
 	
@@ -56,6 +56,21 @@ public class PreprocessingHandler {
 		//Create bag of words container for storing data 
 		BOWContainer bowContainer = new BOWContainer(vector, dim);
 		return bowContainer;
+		
+	}
+
+	public BOWContainer preprocessWordFeature() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public BOWContainer preprocessLemmaFeature() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public BOWContainer preprocessNGramFeature() {
+		// TODO Auto-generated method stub
 		
 	}
 }
