@@ -93,6 +93,11 @@ public class WEKAHandler {
 		// TODO Auto-generated method stub
 		
 	}
+
+	public void showTestResult() {
+		// TODO Auto-generated method stub
+		
+	}
 	
 	
 }

@@ -6,20 +6,20 @@ import de.uni_koeln.spinfo.ml.toolclassification.data.Tool;
 
 public class BOWContainer {
 	
-	private Map<Tool, int[]> toolsVector;
+	private Map<Tool, double[]> toolsVector;
 	
 	private int vectorsDim;
 	
-	public BOWContainer(Map<Tool, int[]> vector, int dim) {
+	public BOWContainer(Map<Tool, double[]> vector, int dim) {
 		toolsVector = vector;
 		vectorsDim = dim;
 	}
 
-	public Map<Tool, int[]> getToolsVector() {
+	public Map<Tool, double[]> getToolsVector() {
 		return toolsVector;
 	}
 
-	public void setToolsVector(Map<Tool, int[]> toolsVector) {
+	public void setToolsVector(Map<Tool, double[]> toolsVector) {
 		this.toolsVector = toolsVector;
 	}
 

@@ -45,7 +45,7 @@ public class Preprocessor {
 		List<String> typesVec = getTokenizedTypesVector(tokenizer);
 
 		// calculate vector
-		Map<Tool, int[]> vector = buildVectors(tools, typesVec);
+		Map<Tool, double[]> vector = buildVectors(tools, typesVec);
 
 		// Create bag of words container for storing vectors and their dimension
 		return new BOWContainer(vector, typesVec.size());
@@ -75,15 +75,15 @@ public class Preprocessor {
 		return new ArrayList<String>(types);
 	}
 
-	private Map<Tool, int[]> buildVectors(List<Tool> tools, List<String> types) {
+	private Map<Tool, double[]> buildVectors(List<Tool> tools, List<String> types) {
 		// contains for every tool a vector for term frequency in tool's context
-		Map<Tool, int[]> toolVectors = new HashMap<Tool, int[]>();
+		Map<Tool, double[]> toolVectors = new HashMap<Tool, double[]>();
 
 		// create vectors map
 		tools.forEach((tool) -> {
 			Map<String, Integer> typeCounts = Tokenizer.getTypeCounts(tool.getContext());
 			// vector for each tool
-			int[] vector = new int[types.size()];
+			double[] vector = new double[types.size()];
 			for (int i = 0; i < types.size(); i++) {
 				Integer count = typeCounts.get(types.get(i));
 				if (count != null) {
