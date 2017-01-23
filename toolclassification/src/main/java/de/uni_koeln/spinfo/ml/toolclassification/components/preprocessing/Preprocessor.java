@@ -27,6 +27,7 @@ public class Preprocessor {
 
 	public Preprocessor(List<Tool> tools) {
 		referenceVector = new ArrayList<String>();
+		this.tools = new ArrayList<Tool>();
 		initialize(tools);
 	}
 

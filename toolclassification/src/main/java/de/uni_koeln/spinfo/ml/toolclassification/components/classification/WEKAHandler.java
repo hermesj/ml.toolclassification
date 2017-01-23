@@ -2,9 +2,20 @@ package de.uni_koeln.spinfo.ml.toolclassification.components.classification;
 
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Random;
 
 import de.uni_koeln.spinfo.ml.toolclassification.components.preprocessing.BOWContainer;
+import de.uni_koeln.spinfo.ml.toolclassification.components.workflow.ClassifierEnum;
 import de.uni_koeln.spinfo.ml.toolclassification.data.Tool;
+import weka.classifiers.Classifier;
+import weka.classifiers.bayes.NaiveBayes;
+import weka.classifiers.evaluation.Evaluation;
+import weka.classifiers.functions.LinearRegression;
+import weka.classifiers.functions.MultilayerPerceptron;
+import weka.classifiers.functions.SMO;
+import weka.classifiers.lazy.IBk;
+import weka.classifiers.lazy.KStar;
+import weka.classifiers.trees.J48;
 import weka.core.*;
 
 /**
@@ -20,17 +31,21 @@ public class WEKAHandler {
 
 	private Instances dataSet;
 
+	private int dataDim;
+
+	private BOWContainer bow;
+
+	private Classifier classifier;
+
+	private Evaluation evaluation;
+
 	// class values
 	private Attribute classValues;
 
-	private int dataDim;
-
-	/**
-	 * @param attrDim
-	 * @param classVal
-	 */
-	public WEKAHandler(int attrDim, ArrayList<String> classVal) {
+	public WEKAHandler(String string, BOWContainer bow, ArrayList<String> classVal, ClassifierEnum classifier) {
+		this.bow = bow;
 		wekaAttributes = new ArrayList<Attribute>();
+		initialize(string, bow, classVal, classifier);
 	}
 
 	/**
@@ -41,28 +56,52 @@ public class WEKAHandler {
 	 * @param feature
 	 *            the classification values
 	 */
-	private void initialize(String dataSetName, BOWContainer bow, ArrayList<String> classVal) {
+	private void initialize(String dataSetName, BOWContainer bow, ArrayList<String> classVal,
+			ClassifierEnum classifierEnum) {
 		// initialize classVal
 		classValues = new Attribute("classVal", classVal);
 
 		// initialize attributes
-		wekaAttributes.add(classValues);
 		for (int i = 0; i < bow.getVectorsDim(); i++) {
 			wekaAttributes.add(new Attribute("Attribut" + i));
 		}
+		wekaAttributes.add(classValues);
 
 		// initialize weka data dimension -> +1 for classification attribute
 		dataDim = bow.getVectorsDim() + 1;
-		
+
 		// the data set to process
 		dataSet = new Instances(dataSetName, wekaAttributes, bow.getToolsVector().size());
+		dataSet.setClassIndex(dataSet.numAttributes() - 1);
 
-		// necessary for classifiers
-		dataSet.setClassIndex(0);
+		// Pick up classifier
+		switch (classifierEnum) {
+		case NAIVE_BAYES:
+			this.classifier = (Classifier) new NaiveBayes();
+			break;
+		case KNN:
+			this.classifier = (Classifier) new IBk();
+			break;
+		case SUPPORT_VECTOR_MACHINES:
+			this.classifier = (Classifier) new SMO();
+			break;
+		case J48:
+			this.classifier = (Classifier) new J48();
+			break;
+		case KSTAR:
+			this.classifier = (Classifier) new KStar();
+			break;
+		case NEURAL_NETWORK:
+			this.classifier = (Classifier) new MultilayerPerceptron();
+			break;
+		default:
+			// TODO: Throw exception
+			System.out.println("ERROR: Unknown Classifier!");
+		}
 	}
 
 	/**
-	 * converts a given tool vector in to a wek data set with respect of the
+	 * converts a given tool vector in to a weka data set with respect of the
 	 * data dimension and class values
 	 * 
 	 * @param bow.getToolsVector()
@@ -71,33 +110,36 @@ public class WEKAHandler {
 	 *            name of the data set
 	 * @return weka represented data set
 	 */
-	public void createWekaModel(String dataSetName, BOWContainer bow, ArrayList<String> classVal) {
+	public void createWekaModel() {
 
-		// Step 1: initialize data for conversion
-		initialize(dataSetName, bow, classVal);
-
-		// Step 2: convert and save result in data set
+		// convert and save result in data set
 		bow.getToolsVector().forEach((t, v) -> {
 			Instance record = new SparseInstance(dataDim);
 
-			// set data and class values
-			record.setValue(classValues, t.getParentClassId());
 			for (int i = 0; i < v.length; i++) {
-				record.setValue(wekaAttributes.get(i + 1), v[i]);
+				record.setValue(wekaAttributes.get(i), v[i]);
 			}
+			// set data and class values
+			String i = t.getParentClassId() + "";
+			record.setValue(classValues, i);
 			dataSet.add(record);
 		});
 	}
 
 	public void processTestClassification() {
-		// TODO Auto-generated method stub
-		
+		try {
+			// Split into training and testing
+			this.evaluation = new Evaluation(dataSet);
+			evaluation.crossValidateModel(classifier, dataSet, 10, new Random(1));
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 	}
 
 	public void showTestResult() {
-		// TODO Auto-generated method stub
-		
+		System.out.println(evaluation.toSummaryString("\nResults\n======\n", false));
 	}
-	
-	
+
 }

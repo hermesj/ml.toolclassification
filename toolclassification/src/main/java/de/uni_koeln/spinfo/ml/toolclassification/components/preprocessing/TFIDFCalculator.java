@@ -50,10 +50,10 @@ public class TFIDFCalculator extends AbstractWeightCalculator {
 					termDocumentFrequency[j] = currentDocumentTerm;
 
 					contextTermCounter += nextVector[j];
-					if (j + 1 == bow.getVectorsDim()) {
-						totalContextTerms[i] = contextTermCounter;
-						contextTermCounter = 0;
-					}
+				}
+				if (j + 1 == bow.getVectorsDim()) {
+					totalContextTerms[i] = contextTermCounter;
+					contextTermCounter = 0;
 				}
 			}
 		}
@@ -64,7 +64,7 @@ public class TFIDFCalculator extends AbstractWeightCalculator {
 		Iterator<Entry<Tool, double[]>> iter = bow.getToolsVector().entrySet().iterator();
 
 		int totalTools = bow.getToolsVector().size();
-		for (int i = 0; i < bow.getToolsVector().size(); i++) {
+		for (int i = 0; i < totalTools; i++) {
 			double[] nextVector = iter.next().getValue();
 			for (int j = 0; j < bow.getVectorsDim(); j++) {
 				if (nextVector[j] != 0) {

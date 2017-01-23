@@ -12,88 +12,107 @@ import de.uni_koeln.spinfo.ml.toolclassification.components.classification.WEKAH
 import de.uni_koeln.spinfo.ml.toolclassification.components.crossvalidation.CrossvalidationGroupBuilder;
 import de.uni_koeln.spinfo.ml.toolclassification.components.crossvalidation.TrainingTestSets;
 import de.uni_koeln.spinfo.ml.toolclassification.components.preprocessing.VectorBuilder;
+import de.uni_koeln.spinfo.ml.toolclassification.components.workflow.ClassifierEnum;
+import de.uni_koeln.spinfo.ml.toolclassification.components.workflow.Feature;
+import de.uni_koeln.spinfo.ml.toolclassification.components.workflow.Weight;
+import de.uni_koeln.spinfo.ml.toolclassification.components.workflow.WorkflowHandler;
+import de.uni_koeln.spinfo.ml.toolclassification.components.workflow.Configuration;
 import de.uni_koeln.spinfo.ml.toolclassification.data.BayesModel;
 import de.uni_koeln.spinfo.ml.toolclassification.data.Tool;
-import weka.classifiers.Classifier;
-import weka.classifiers.bayes.NaiveBayes;
-import weka.classifiers.evaluation.Evaluation;
-import weka.core.Attribute;
-import weka.core.DenseInstance;
-import weka.core.FastVector;
-import weka.core.Instance;
-import weka.core.Instances;
-import weka.core.converters.ConverterUtils.DataSource;
+
 
 public class Application {
 
 	public static void main(String[] args) throws IOException {
 		System.out.println("Tool Classifying Application");
 		System.out.println("----------------------------");
-		DataImporter di = new DataImporter();
-		di.parseToolsAndClassesFromFile("src/main/resources/data/DatenTools.tsv");
 		
-		List<Tool> tools = new ArrayList<Tool>(di.getTools().values());
-
-//		//System.out.println("BufferList size: " + bufferList.size());
-//		System.out.println("Before cleanup: " + tools.size());
-//		tools= bufferList;
-//		System.out.println("After cleanup: " + tools.size());
-
+		ArrayList<Configuration> configList = new ArrayList<Configuration>();
+		configList.add(new Configuration(Weight.ABSOLUTE, ClassifierEnum.NAIVE_BAYES, Feature.WORD));
+		configList.add(new Configuration(Weight.TFIDF, ClassifierEnum.NAIVE_BAYES, Feature.WORD));
+		configList.add(new Configuration(Weight.ABSOLUTE, ClassifierEnum.KNN, Feature.WORD));
+		configList.add(new Configuration(Weight.TFIDF, ClassifierEnum.KNN, Feature.WORD));
+		configList.add(new Configuration(Weight.ABSOLUTE, ClassifierEnum.SUPPORT_VECTOR_MACHINES, Feature.WORD));
+		configList.add(new Configuration(Weight.TFIDF, ClassifierEnum.SUPPORT_VECTOR_MACHINES, Feature.WORD));
+		configList.add(new Configuration(Weight.ABSOLUTE, ClassifierEnum.KSTAR, Feature.WORD));
+		configList.add(new Configuration(Weight.TFIDF, ClassifierEnum.KSTAR, Feature.WORD));
+		configList.add(new Configuration(Weight.ABSOLUTE, ClassifierEnum.J48, Feature.WORD));
+		configList.add(new Configuration(Weight.TFIDF, ClassifierEnum.J48, Feature.WORD));
 		
+		WorkflowHandler wf = new WorkflowHandler();
+//		wf.processWorkflow(configList);
 		
-		int cvgroups = 10;
-		CrossvalidationGroupBuilder<Tool> cvgb = new CrossvalidationGroupBuilder<Tool>(tools, cvgroups);
-		double overallResult = 0.0;
-		for (TrainingTestSets<Tool> tts : cvgb) {
-			//System.out.println(tts.getTrainingSet().size()); //--> Build model / choose classifier
-			
-			//System.out.println(tts.getTestSet().size()); //--> Classify 
-			//--> Evaluate
-			System.out.println();
-			try {
-				performKKNClassification(tts, di.getParentClasses().keySet());
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-//			double singleResult = performBayesClassification(tts);
-//			overallResult += singleResult;
-		}
-		//--> Calculate mean
-		overallResult = overallResult/cvgroups;
-		System.out.println("Overall accuracy: " + overallResult);
+//		
+		ArrayList<Configuration> configList2 = new ArrayList<Configuration>();
+//		configList2.add(new Configuration(Weight.ABSOLUTE, ClassifierEnum.KNN, Feature.WORD));
+//		configList2.add(new Configuration(Weight.TFIDF, ClassifierEnum.KNN, Feature.WORD));
+		configList2.add(new Configuration(Weight.ABSOLUTE, ClassifierEnum.NEURAL_NETWORK, Feature.WORD));
+		configList2.add(new Configuration(Weight.TFIDF, ClassifierEnum.NEURAL_NETWORK, Feature.WORD));
 		
-		//End
+		wf.processWorkflow(configList2);
+//		
+//		
+//		DataImporter di = new DataImporter();
+//		di.parseToolsAndClassesFromFile("src/main/resources/data/DatenTools.tsv");
+//		
+//		List<Tool> tools = new ArrayList<Tool>(di.getTools().values());
+//
+//
+//		
+//		
+//		int cvgroups = 10;
+//		CrossvalidationGroupBuilder<Tool> cvgb = new CrossvalidationGroupBuilder<Tool>(tools, cvgroups);
+//		double overallResult = 0.0;
+//		for (TrainingTestSets<Tool> tts : cvgb) {
+//			//System.out.println(tts.getTrainingSet().size()); //--> Build model / choose classifier
+//			
+//			//System.out.println(tts.getTestSet().size()); //--> Classify 
+//			//--> Evaluate
+//			System.out.println();
+//			try {
+//				performKKNClassification(tts, di.getParentClasses().keySet());
+//			} catch (Exception e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+////			double singleResult = performBayesClassification(tts);
+////			overallResult += singleResult;
+//		}
+//		//--> Calculate mean
+//		overallResult = overallResult/cvgroups;
+//		System.out.println("Overall accuracy: " + overallResult);
+//		
+//		//End
 	}
 	
 	private static void performKKNClassification(TrainingTestSets<Tool> tts, Set<Integer> classValues) throws Exception {
 		
-		//training vector
-		Map<Tool,int[]> trainingSet = VectorBuilder.getToolsWithVector(tts.getTrainingSet().subList(0, 3));
-		
-		//test vector
-		Map<Tool,int[]> testSet = VectorBuilder.getToolsWithVector(tts.getTestSet().subList(0, 100));
-		
-		//transform classValues 
-		ArrayList<String> stringClassVal = new ArrayList<String>();
-		classValues.forEach((i) -> stringClassVal.add(i.toString()));
-		
-		WEKAHandler wekaHandler = new WEKAHandler(VectorBuilder.calculateDimension(trainingSet), stringClassVal);
-		
-		//build weka training set
-		Instances wekaTrainingSet = wekaHandler.convertToolsVectorToWekaModel(trainingSet, "training");
-				
-		Classifier cModel = (Classifier)new NaiveBayes();
-		cModel.buildClassifier(wekaTrainingSet);
-		
-		//build wek test set
-		Instances wekaTestSet = wekaHandler.convertToolsVectorToWekaModel(testSet, "training");
-		
-		 Evaluation eTest = new Evaluation(wekaTestSet);
-		 eTest.evaluateModel(cModel, wekaTestSet);
-		 
-		 String strSummary = eTest.toSummaryString();
-		 System.out.println("Summary" + strSummary);
+//		//training vector
+//		Map<Tool,int[]> trainingSet = VectorBuilder.getToolsWithVector(tts.getTrainingSet().subList(0, 3));
+//		
+//		//test vector
+//		Map<Tool,int[]> testSet = VectorBuilder.getToolsWithVector(tts.getTestSet().subList(0, 100));
+//		
+//		//transform classValues 
+//		ArrayList<String> stringClassVal = new ArrayList<String>();
+//		classValues.forEach((i) -> stringClassVal.add(i.toString()));
+//		
+//		WEKAHandler wekaHandler = new WEKAHandler(VectorBuilder.calculateDimension(trainingSet), stringClassVal);
+//		
+//		//build weka training set
+//		Instances wekaTrainingSet = wekaHandler.convertToolsVectorToWekaModel(trainingSet, "training");
+//				
+//		Classifier cModel = (Classifier)new NaiveBayes();
+//		cModel.buildClassifier(wekaTrainingSet);
+//		
+//		//build wek test set
+//		Instances wekaTestSet = wekaHandler.convertToolsVectorToWekaModel(testSet, "training");
+//		
+//		 Evaluation eTest = new Evaluation(wekaTestSet);
+//		 eTest.evaluateModel(cModel, wekaTestSet);
+//		 
+//		 String strSummary = eTest.toSummaryString();
+//		 System.out.println("Summary" + strSummary);
 	}
 
 	private static double performBayesClassification(TrainingTestSets<Tool> tts) {
