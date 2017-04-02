@@ -126,7 +126,7 @@ public class WorkflowHandler {
 			System.out.println("-- Info: Tsv eingelesen --");
 		}
 		tsvParser.parseToolsTsv(toolsFile);
-		tsvParser.parseWikiArticles(wiki)
+		tsvParser.parseWikiArticles(wikiArticlesFile);
 		
 		// read index list
 		wikipediaIndex = WikiReader.readIndexFile(indexFile);
