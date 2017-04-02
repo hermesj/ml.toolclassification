@@ -1,5 +1,6 @@
 package de.uni_koeln.spinfo.ml.toolclassification.data;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class BOWContainer {
@@ -11,6 +12,11 @@ public class BOWContainer {
 	public BOWContainer(Map<Tool, double[]> vector, int dim) {
 		toolsVector = vector;
 		vectorsDim = dim;
+	}
+	
+	public BOWContainer() {
+		toolsVector = new HashMap<Tool,double[]>();
+		vectorsDim = 0;
 	}
 
 	public Map<Tool, double[]> getToolsVector() {

@@ -6,10 +6,10 @@ import de.uni_koeln.spinfo.ml.toolclassification.data.BOWContainer;
 import de.uni_koeln.spinfo.ml.toolclassification.data.BagOfWords;
 import de.uni_koeln.spinfo.ml.toolclassification.data.Model;
 
-public class LogLiklihoodCalculator extends AbstractWeightCalculator {
+public class LogLiklihoodCalculator extends AbsoluteWeightCalculator {
 
-	public LogLiklihoodCalculator(List<BagOfWords> model) {
-		super(model);
+	public LogLiklihoodCalculator(List<BagOfWords> classBOW) {
+		super(classBOW);
 	}
 
 	@Override

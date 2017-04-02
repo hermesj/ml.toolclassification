@@ -1,20 +1,17 @@
 package de.uni_koeln.spinfo.ml.toolclassification.workflow;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import de.uni_koeln.spinfo.ml.toolclassification.components.*;
 import de.uni_koeln.spinfo.ml.toolclassification.classification.*;
 import de.uni_koeln.spinfo.ml.toolclassification.preprocessing.*;
 import de.uni_koeln.spinfo.ml.toolclassification.preprocessing.feature.FeatureFactory;
 import de.uni_koeln.spinfo.ml.toolclassification.preprocessing.feature.WordFeature;
 import de.uni_koeln.spinfo.ml.toolclassification.preprocessing.weight.AbsoluteWeightCalculator;
-import de.uni_koeln.spinfo.ml.toolclassification.preprocessing.weight.AbstractWeightCalculator;
 import de.uni_koeln.spinfo.ml.toolclassification.preprocessing.weight.LogLiklihoodCalculator;
 import de.uni_koeln.spinfo.ml.toolclassification.preprocessing.weight.TFIDFCalculator;
 import de.uni_koeln.spinfo.ml.toolclassification.data.*;
@@ -30,8 +27,7 @@ public class WorkflowHandler {
 
 	private TsvParser tsvParser;
 	private File toolsFile;
-	private File indexFile;
-	private Map<String, String> wikipediaIndex;
+	private File wikiArticlesFile;
 	private FeatureFactory featureFactory;
 
 	public WorkflowHandler(Configuration config) {
@@ -48,8 +44,7 @@ public class WorkflowHandler {
 	private void initialize() {
 		tsvParser = new TsvParser();
 		toolsFile = new File("src/main/resources/tools.tsv");
-		indexFile = new File("src/main/resources/sortedWiki/indexMini.txt");
-		wikipediaIndex = new HashMap<>();
+		wikiArticlesFile = new File("src/main/resources/germanWikiArticles.tsv");
 		featureFactory = new FeatureFactory();
 	}
 
@@ -130,7 +125,8 @@ public class WorkflowHandler {
 			tsvParser = new TsvParser();
 			System.out.println("-- Info: Tsv eingelesen --");
 		}
-		tsvParser.parseTsv(toolsFile);
+		tsvParser.parseToolsTsv(toolsFile);
+		tsvParser.parseWikiArticles(wiki)
 		
 		// read index list
 		wikipediaIndex = WikiReader.readIndexFile(indexFile);
@@ -148,7 +144,7 @@ public class WorkflowHandler {
 
 	private BOWContainer calculateWeight(List<BagOfWords> bowList) {
 		
-		AbstractWeightCalculator weightCalc = null;
+		AbsoluteWeightCalculator weightCalc = null;
 		switch (config.getWeight()) {
 		case TFIDF:
 			weightCalc = new TFIDFCalculator(bowList);
@@ -158,6 +154,7 @@ public class WorkflowHandler {
 			break;
 		case ABSOLUTE:
 			weightCalc = new AbsoluteWeightCalculator(bowList);
+			break;
 		default:
 			// TODO: Throw exception
 			System.out.println("ERROR: Unknown Weight!");

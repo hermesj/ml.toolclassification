@@ -13,8 +13,9 @@ public class TsvParser {
 
 	private Map<String, Tool> tools = new HashMap<>();
 	private Set<Integer> parentClasses = new HashSet<>();
+	private Map<String,String> wikiArticles = new HashMap<>();
 
-	public void parseTsv(File file) {
+	public void parseToolsTsv(File file) {
 		try (BufferedReader bReader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF8"))) {
 
 			while (bReader.ready()) {
@@ -55,6 +56,11 @@ public class TsvParser {
 		}
 	}
 	
+	
+	public void parseWikiArticles(File wikiArticlesFile) {
+		
+		
+	}
 	
 	public Set<Integer> getParentClasses() {
 		return parentClasses;

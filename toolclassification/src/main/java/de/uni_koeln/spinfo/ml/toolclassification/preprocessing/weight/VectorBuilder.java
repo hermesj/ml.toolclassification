@@ -31,7 +31,7 @@ public class VectorBuilder {
 	private static Map<Tool, int[]> buildVectors(List<Tool> toolsWithContexts, List<String> types){
 		Map<Tool, int[]> toolsWithVectors = new HashMap<Tool, int[]>();
 		for (Tool tool : toolsWithContexts) {
-			Map<String, Integer> typeCounts = null; //Tokenizer.getTypeCounts(tool.getContext());
+			Map<String, Integer> typeCounts = tool.getContext(); //Tokenizer.getTypeCounts(tool.getContext());
 			int[] vector = new int[types.size()];
 			for (int i=0; i<types.size(); i++) {
 				Integer count = typeCounts.get(types.get(i));

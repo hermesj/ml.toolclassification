@@ -10,16 +10,13 @@ import de.uni_koeln.spinfo.ml.toolclassification.data.BagOfWords;
 import de.uni_koeln.spinfo.ml.toolclassification.data.Model;
 import de.uni_koeln.spinfo.ml.toolclassification.data.Tool;
 
-public class TFIDFCalculator extends AbstractWeightCalculator {
+public class TFIDFCalculator extends AbsoluteWeightCalculator {
 
-	private int[] termDocumentFrequency;
-	private int[] totalContextTerms;
-
-	public TFIDFCalculator(List<BagOfWords> model) {
-		super(model);
+	public TFIDFCalculator(List<BagOfWords> classBOW) {
+		super(classBOW);
 		
-//		termDocumentFrequency = new int[model.getBagOfWordList().iterator().next().getWordMap().size()];
-//		totalContextTerms = new int[model.getBagOfWordList().size()];
+		termDocumentFrequency = new int[model.getBagOfWordList().iterator().next().getWordMap().size()];
+		totalContextTerms = new int[model.getBagOfWordList().size()];
 	}
 
 	@Override
