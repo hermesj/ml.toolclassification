@@ -1,213 +1,260 @@
 package de.uni_koeln.spinfo.ml.toolclassification.preprocessing;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeSet;
 
-import de.uni_koeln.spinfo.ml.toolclassification.data.Context;
+import de.uni_koeln.spinfo.ml.toolclassification.data.BOWContainer;
 import de.uni_koeln.spinfo.ml.toolclassification.data.Model;
 import de.uni_koeln.spinfo.ml.toolclassification.data.Tool;
 import de.uni_koeln.spinfo.ml.toolclassification.preprocessing.components.Cooccurrence;
+import de.uni_koeln.spinfo.ml.toolclassification.preprocessing.feature.FeatureFactory;
+import de.uni_koeln.spinfo.ml.toolclassification.preprocessing.feature.Tokenizer;
 import de.uni_koeln.spinfo.ml.toolclassification.preprocessing.feature.WordFeature;
-import de.uni_koeln.spinfo.ml.toolclassification.wikiContext.ContextSearcher;
 
 /**
+ * Handles all pre processing tasks like featuring and bag of words creation.
+ * 
  * @author vetemi
  *
  */
 public class Preprocessor {
 
+	/**
+	 * the feature component to feature the tools name and context
+	 */
 	private WordFeature feature;
-	private ContextSearcher contextSearcher;
-	Map<String, String> wikipediaIndex;
+	/**
+	 * the tokenizer used for some feature components
+	 */
+	private Tokenizer tokenizer;
+	/**
+	 * the Wikipedia articles as map for data enrichment
+	 */
+	private Map<String, String> wikiArticles;
+	/**
+	 * All distinct words of the whole corpus
+	 */
+	private TreeSet<String> types;
 
+	/**
+	 * tools on which pre processing tasks apply
+	 */
 	private Map<String, Tool> tools;
 
-	// private List<String> referenceVector;
-	// private Tokenizer tokenizer;
-
-	public Preprocessor(Map<String, Tool> tools, WordFeature feature, Map<String, String> wikipediaIndex) {
+	public Preprocessor(Map<String, Tool> tools, WordFeature feature, Map<String, String> wikiArticles) {
 		this.tools = tools;
 		this.feature = feature;
-		this.wikipediaIndex = wikipediaIndex;
+		this.wikiArticles = wikiArticles;
+		this.tokenizer = new Tokenizer();
+		this.types = new TreeSet<>();
 	}
 
-	public Model createModel() {
+	/**
+	 * Creates the bag of words model, based on the given tools and Wikipedia
+	 * articles.
+	 * 
+	 * @return bag of words model
+	 */
+	public BOWContainer createBowModel() {
 
 		// initialize statistics
 		int contextFoundinTsv = 0;
-		int contextFoundinTsvAndWiki = 0;
 		int contextFoundinWiki = 0;
 		int contextFoundInOtherTool = 0;
-		
-		Model model = new Model(feature.toString());
 
-		// Set contextSearcher with tool names and wiki index
-		if (contextSearcher == null) {
-			contextSearcher = new ContextSearcher(tools.keySet(), wikipediaIndex);
-		}
-
-		// Kontexte aus Wikipedia-Dump auslesen
-		List<Context> contextList = contextSearcher.getContext(feature);
-
-		// Kontexte der Tsv-Datei featuren
-		featureToolContext(feature);
-
-		// Context-Objekte mit entsprechenden Tool-Objekten zusammenführen
+		StringBuilder contextStringBuilder = new StringBuilder();
+		String context = "";
+		List<String> totalContextList = new ArrayList<>();
 		List<Tool> toolsWoutContext = new ArrayList<>();
-		for (Context contextObj : contextList) {
-			Tool tool = this.tools.get(contextObj.getTitle());
 
-			List<String> contextFromWiki = contextObj.getContext();
-			List<String> contextFromTsv = tool.getContext();
+		for (Entry<String, Tool> toolEntry : tools.entrySet()) {
 
-			// Statistik erstellen und ausgeben
-			if (!contextFromWiki.isEmpty() && !contextFromTsv.isEmpty()) {
-				contextFoundinTsvAndWiki++;
+			// get context from wiki
+			// try first perfect match
+			context = wikiArticles.get(toolEntry.getKey());
+
+			List<String> featuredToolName = featureToolName(toolEntry.getKey());
+
+			// check if something found
+			if (context == null) {
+				// if not, try with stemmed and lemmatized name
+				if (!featuredToolName.isEmpty()) {
+					toolEntry.getValue().setFeaturedName(new ArrayList<>(featuredToolName));
+					for (String featuredName : featuredToolName) {
+						context = wikiArticles.get(featuredName);
+						if (context != null) {
+							// append found context
+							contextStringBuilder.append(context);
+						}
+					}
+				}
+
+			} else {
+				// perfect match
+				contextStringBuilder.append(context);
+
+				// Store featured name here. Important for later coocurrence
+				// search
+				if (!featuredToolName.isEmpty()) {
+					toolEntry.getValue().setFeaturedName(featuredToolName);
+				}
 			}
-			if (!contextFromWiki.isEmpty() && contextFromTsv.isEmpty()) {
+
+			// something found in Wikipedia?
+			if (!contextStringBuilder.toString().isEmpty()) {
+				// this can be done because tokenization has been done for wiki
+				// articles when created file
+				totalContextList = new ArrayList<>(Arrays.asList(contextStringBuilder.toString().split(" ")));
 				contextFoundinWiki++;
-
 			}
-			if (contextFromWiki.isEmpty() && !contextFromTsv.isEmpty()) {
+
+			// combine possibly Wikipedia article with existing context
+			if (!toolEntry.getValue().getContext().isEmpty()) {
+				totalContextList.addAll(toolEntry.getValue().getContext());
 				contextFoundinTsv++;
 			}
-			if (contextFromWiki.isEmpty() && contextFromTsv.isEmpty()) {
-				toolsWoutContext.add(tool);
-			}
-			tool.addFeaturedContext(contextFromWiki);
-			tool.setFeaturedName(contextObj.getFeaturedTitle());
-			makeWordMap(tool);
-			model.addToolToBagOfWordsWithID(tool);
 
+			if (totalContextList.isEmpty()) {
+				// no context at all
+				toolsWoutContext.add(toolEntry.getValue());
+			} else {
+				totalContextList = featureToolContext(feature, totalContextList);
+				toolEntry.getValue().addFeaturedContext(totalContextList);
+
+				makeWordMap(toolEntry.getValue());
+			}
+
+			// clear all
+			contextStringBuilder.setLength(0);
+			totalContextList.clear();
+			featuredToolName.clear();
 		}
+
+		// Try to find coocurrence tool context
 		Cooccurrence cooccurrence = new Cooccurrence(new HashSet<Tool>(this.tools.values()));
-		contextFoundInOtherTool = cooccurrence.enrichContextWithReferencingTools(toolsWoutContext, model);
+		contextFoundInOtherTool = cooccurrence.enrichContextWithReferencingTools(toolsWoutContext);
 
 		System.out.println("-----Statistik-----");
 		System.out.println(feature + "\n");
 		System.out.println("Insgesamt gibt es " + this.tools.size() + " Tools \n");
-		System.out.println("Für " + contextFoundinTsv + " Tools wurde die Kontext nur in der Tsv-Datei gefunden \n");
-		System.out.println("Für " + contextFoundinWiki + " Tools wurde Kontext nur im Wiki-Dump gefunden \n");
-		System.out.println("Für " + contextFoundinTsvAndWiki
-				+ " Tools wurde sowohl Kontext in der Tsv-Datei als auch im Wiki-Dump gefunden \n");
+		System.out.println("FÃ¼r " + contextFoundinTsv + " Tools wurde die Kontext nur in der Tsv-Datei gefunden \n");
+		System.out.println("FÃ¼r " + contextFoundinWiki + " Tools wurde Kontext nur im Wiki-Dump gefunden \n");
 		System.out.println(
-				"Für " + contextFoundInOtherTool + " Tools wurde der Kontext von referenzierenden Tools verwendet \n");
-		System.out.println("Für " + (toolsWoutContext.size() - contextFoundInOtherTool)
+				"FÃ¼r " + contextFoundInOtherTool + " Tools wurde der Kontext von referenzierenden Tools verwendet \n");
+		System.out.println("FÃ¼r " + (toolsWoutContext.size() - contextFoundInOtherTool)
 				+ " Tools wurde gar keine Kontexte gefunden \n");
-		
-		
-		return model;
 
+		// create and return bag of words
+		return createBOWContainer();
 	}
 
-	private void featureToolContext(WordFeature feature) {
-		for (String word : this.tools.keySet()) {
-			Tool tool = this.tools.get(word);
-			List<String> wordsToBeProcessed = new ArrayList<>();
-			tool.clearFeaturedContext();
-			if (feature.needsTokenizing()) {
-				if (tool.getTokenizedTsvcontext().isEmpty()) {
-					try {
-						tool.setTokenizedTsvcontext(contextSearcher.tokenizeWords(tool.getContext()));
-					} catch (Exception e) {
-						e.printStackTrace();
+	/**
+	 * Creates the bag of words, based on the types of the whole context corpus.
+	 * For every tool there will be a vector in the same size.
+	 * 
+	 * @return
+	 */
+	public BOWContainer createBOWContainer() {
+		// for better ID access, convert to list
+		ArrayList<String> typesList = new ArrayList<>(types);
+		types = null;
+		Map<Tool, double[]> bow = new HashMap<>();
+		Map<String, Double> wordMap;
+		double[] vector;
+		String currentWord = "";
+		Double value = 0.0;
+
+		for (Entry<String, Tool> toolEntry : tools.entrySet()) {
+			// only for tools with context
+			if (!toolEntry.getValue().getWordMap().isEmpty()) {
+
+				vector = new double[typesList.size()];
+				wordMap = toolEntry.getValue().getWordMap();
+
+				// iterate through all words and merge own bag of words map on
+				// that. Otherwise entry is 0.0
+				for (int i = 0; i < typesList.size(); i++) {
+					currentWord = typesList.get(i);
+					value = wordMap.get(currentWord);
+					if (value != null) {
+						vector[i] = value;
 					}
 				}
-				wordsToBeProcessed = tool.getTokenizedTsvcontext();
-			} else {
-				wordsToBeProcessed.addAll(tool.getContext());
+				bow.put(toolEntry.getValue(), vector);
 			}
-			List<String> bla = feature.processWords(wordsToBeProcessed);
-			tool.addFeaturedContext(bla);
-			tools.put(word, tool);
 		}
+		BOWContainer bowContainer = new BOWContainer(bow, typesList.size());
+
+		return bowContainer;
 	}
 
-	private void makeWordMap(Tool tool) {
+	/**
+	 * Based on the given string, it will call all possible feature components
+	 * and return a distinct list of all feature outputs.
+	 * 
+	 * @param toolName
+	 *            String to feature
+	 * @return distinct list of all possible feature of String
+	 */
+	public List<String> featureToolName(String toolName) {
+
+		Set<String> featuredNames = new HashSet<String>();
+
+		// necessary because feature components are designed to take lists only
+		List<String> namesList = new ArrayList<String>();
+		namesList.add(toolName);
+
+		for (WordFeature feature : FeatureFactory.getAllFeatures()) {
+			featuredNames.addAll(feature.processWords(namesList));
+		}
+		return new ArrayList<String>(featuredNames);
+	}
+
+	/**
+	 * Features the context (list of Strings) of a tool, based on the desired
+	 * feature component.
+	 * 
+	 * @param feature
+	 *            the feature component to feature context
+	 * @param contextList
+	 *            the context as list of Strings
+	 * @return the context as featured list of Strings
+	 */
+	public List<String> featureToolContext(WordFeature feature, List<String> contextList) {
+		if (feature.needsTokenizing()) {
+			contextList = tokenizer.tokenize(contextList);
+		}
+		return feature.processWords(contextList);
+	}
+
+	/**
+	 * Creates for a given tool its own bag of words map. Stores the bag of
+	 * words model in tools word map attribute. Furthermore, collects
+	 * distinctively all types of the tools corpus.
+	 * 
+	 * @param tool
+	 *            to create bag of words model.
+	 */
+	public void makeWordMap(Tool tool) {
 		Map<String, Double> bagOfWords = new HashMap<>();
 		double wordCount = 0.;
 		for (String word : tool.getFeaturedContext()) {
+			// fill bag of words of tool
+			bagOfWords.merge(word, 1.0, Double::sum);
 			wordCount++;
-			Double count = bagOfWords.get(word);
-			if (count == null) {
-				count = 0.;
-			}
-			bagOfWords.put(word, ++count);
+
+			// fill types vector for vector building
+			types.add(word);
 		}
-		// System.out.println(bagOfWords);
 		tool.setWordMap(bagOfWords);
 		tool.setWordCount(wordCount);
 	}
-
-	// private void initialize(List<Tool> tools) {
-	// // Clean tool set, i.e. remove all tools without context
-	// tools.forEach((tool) -> {
-	// // add only tools with context to list
-	// if (tool.getContext() != null) {
-	// this.tools.add(tool);
-	// }
-	// });
-	// }
-	//
-	// public BOWContainer createWordVector() {
-	// // Create reference vector which holds all characters
-	// List<String> typesVec = getTokenizedTypesVector(tokenizer);
-	//
-	// // calculate vector
-	// Map<Tool, double[]> vector = buildVectors(tools, typesVec);
-	//
-	// // Create bag of words container for storing vectors and their dimension
-	// return new BOWContainer(vector, typesVec.size());
-	// }
-	//
-	// public BOWContainer createLemmaVector() {
-	// return null;
-	// // TODO Auto-generated method stub
-	//
-	// }
-	//
-	// public BOWContainer createNGramVector() {
-	// return null;
-	// // TODO Auto-generated method stub
-	// }
-	//
-	// private List<String> getTokenizedTypesVector(Tokenizer tokenizer) {
-	// // Tree sets are ordered
-	// Set<String> types = new TreeSet<String>();
-	//
-	// // create reference vector
-	// tools.forEach((tool) -> {
-	// // TODO: Suggestion: use param tokenizer which is a WEKA tokenizer
-	// List<String> words = Tokenizer.tokenize(tool.getContext());
-	// words.forEach((word) -> types.add(word));
-	// });
-	// return new ArrayList<String>(types);
-	// }
-	//
-	// private Map<Tool, double[]> buildVectors(List<Tool> tools, List<String>
-	// types) {
-	// // contains for every tool a vector for term frequency in tool's context
-	// Map<Tool, double[]> toolVectors = new HashMap<Tool, double[]>();
-	//
-	// // create vectors map
-	// tools.forEach((tool) -> {
-	// Map<String, Integer> typeCounts =
-	// Tokenizer.getTypeCounts(tool.getContext());
-	// // vector for each tool
-	// double[] vector = new double[types.size()];
-	// for (int i = 0; i < types.size(); i++) {
-	// Integer count = typeCounts.get(types.get(i));
-	// if (count != null) {
-	// // add term frequency to vector
-	// vector[i] = count;
-	// }
-	// }
-	// toolVectors.put(tool, vector);
-	// });
-	// return toolVectors;
-	// }
 
 }

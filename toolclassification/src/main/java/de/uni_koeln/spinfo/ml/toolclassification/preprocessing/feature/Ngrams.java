@@ -1,9 +1,7 @@
 package de.uni_koeln.spinfo.ml.toolclassification.preprocessing.feature;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 
 public class Ngrams extends WordFeature {

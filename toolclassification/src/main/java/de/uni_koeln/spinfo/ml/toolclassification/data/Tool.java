@@ -1,6 +1,7 @@
 package de.uni_koeln.spinfo.ml.toolclassification.data;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,6 +29,7 @@ public class Tool {
 		this.tsvContext = context;
 		this.featuredContext=new ArrayList<>();
 		this.tokenizedTsvcontext = new ArrayList<>();
+		this.wordMap = new HashMap<>();
 	}
 		
 	public List<String> getTokenizedTsvcontext() {
@@ -46,6 +48,9 @@ public class Tool {
 	}
 
 	public void addFeaturedContext(List<String> featuredContext) {
+		if (featuredContext == null) {
+			featuredContext = new ArrayList<>();
+		}
 		this.featuredContext.addAll(featuredContext);
 	}
 

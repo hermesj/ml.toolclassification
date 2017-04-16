@@ -1,6 +1,7 @@
 package de.uni_koeln.spinfo.ml.toolclassification.preprocessing.feature;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -17,19 +18,17 @@ public class Tokenizer {
 	private SentenceDetectorME sentencer;
 	private TokenizerME tokenizer;
 
-	public Tokenizer() throws Exception {
-		this.sentencer = new SentenceDetectorME(new SentenceModel(new File("src/main/resources/opennlp/de-sentence.bin")));
-		this.tokenizer = new TokenizerME(new TokenizerModel(new File("src/main/resources/opennlp/de-token.bin")));
+	public Tokenizer() {
+		try {
+			this.sentencer = new SentenceDetectorME(
+					new SentenceModel(new File("src/main/resources/opennlp/de-sentence.bin")));
+			this.tokenizer = new TokenizerME(new TokenizerModel(new File("src/main/resources/opennlp/de-token.bin")));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
-	
-//	public List<String> tokenize(List<String> toTokenize){
-//		List<String> result = new ArrayList<>();
-//		for(String string : toTokenize){
-//			result.addAll(tokenize(string));
-//		}
-//		return result;
-//	}
 	public List<String> tokenize(String string) {
 		List<String> result = new ArrayList<String>();
 		// Klammern hinzugefügt
@@ -38,7 +37,7 @@ public class Tokenizer {
 
 		for (String sentence : sentencer.sentDetect(string)) {
 			for (String token : tokenizer.tokenize(sentence)) {
-				 token = token.toLowerCase();
+				token = token.toLowerCase();
 				// strip punctuation
 				if (!punctuation.matcher(token).find()) {
 
@@ -76,8 +75,6 @@ public class Tokenizer {
 						zwischenresult = tmpresult2;
 					}
 
-					
-				
 					for (String tok : zwischenresult) {
 						if (!tok.isEmpty()) {
 							result.add(tok);
@@ -87,14 +84,15 @@ public class Tokenizer {
 				}
 			}
 		}
-
 		return result;
-
 	}
 
-	public static void main(String[] args) throws Exception {
-		Tokenizer tok = new Tokenizer();
-		System.out.println(tok.tokenize(""));
+	public List<String> tokenize(List<String> listOfStrings) {
+		List<String> tokenizedWords = new ArrayList<>();
+		for (String line : listOfStrings) {
+			tokenizedWords.addAll(tokenize(line));
+		}
+		return tokenizedWords;
 	}
 
 }

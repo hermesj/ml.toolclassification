@@ -3,19 +3,25 @@ package de.uni_koeln.spinfo.ml.toolclassification.data;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Container for the bag of words.
+ * 
+ * @author vetemi
+ *
+ */
 public class BOWContainer {
-	
+
 	private Map<Tool, double[]> toolsVector;
-	
+
 	private int vectorsDim;
-	
+
 	public BOWContainer(Map<Tool, double[]> vector, int dim) {
 		toolsVector = vector;
 		vectorsDim = dim;
 	}
-	
+
 	public BOWContainer() {
-		toolsVector = new HashMap<Tool,double[]>();
+		toolsVector = new HashMap<Tool, double[]>();
 		vectorsDim = 0;
 	}
 

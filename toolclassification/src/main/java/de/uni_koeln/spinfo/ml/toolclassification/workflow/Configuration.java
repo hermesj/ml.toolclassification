@@ -1,5 +1,10 @@
 package de.uni_koeln.spinfo.ml.toolclassification.workflow;
 
+/**
+ * Container for different configurations
+ * @author vetemi
+ *
+ */
 public class Configuration {
 	
 	private Weight weight;

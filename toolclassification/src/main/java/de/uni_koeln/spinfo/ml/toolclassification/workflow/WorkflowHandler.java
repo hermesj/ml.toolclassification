@@ -2,7 +2,6 @@ package de.uni_koeln.spinfo.ml.toolclassification.workflow;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -16,19 +15,32 @@ import de.uni_koeln.spinfo.ml.toolclassification.preprocessing.weight.LogLikliho
 import de.uni_koeln.spinfo.ml.toolclassification.preprocessing.weight.TFIDFCalculator;
 import de.uni_koeln.spinfo.ml.toolclassification.data.*;
 import de.uni_koeln.spinfo.ml.toolclassification.io.TsvParser;
-import de.uni_koeln.spinfo.ml.toolclassification.io.WikiReader;
 
+/**
+ * Controls work flow of tools classification. Calls methods in the needed orde.
+ * Allows to run multiple classification runs via configuration list.
+ * 
+ * @author vetemi
+ *
+ */
 public class WorkflowHandler {
 
+	/** Stores configuration parameters for classification */
 	private Configuration config;
 
+	/** Actual configuration tool handler */
 	private WEKAHandler wekaHandler;
+	/**
+	 * Handles pre processing tasks like featuring, bag of words creation, etc.
+	 */
 	private Preprocessor preprocessor;
 
+	/** Imports and parses TSV files */
 	private TsvParser tsvParser;
+	/** File containing all tools */
 	private File toolsFile;
+	/** File containing Wikipedia articles */
 	private File wikiArticlesFile;
-	private FeatureFactory featureFactory;
 
 	public WorkflowHandler(Configuration config) {
 		super();
@@ -40,131 +52,170 @@ public class WorkflowHandler {
 		super();
 		initialize();
 	}
-	
+
+	/**
+	 * initializes files and parser. Different file locations must be changed
+	 * here.
+	 */
 	private void initialize() {
 		tsvParser = new TsvParser();
 		toolsFile = new File("src/main/resources/tools.tsv");
-		wikiArticlesFile = new File("src/main/resources/germanWikiArticles.tsv");
-		featureFactory = new FeatureFactory();
+		wikiArticlesFile = new File("src/main/resources/GermanWikiArticles.tsv");
 	}
 
+	/**
+	 * Runs the classification with the previously set parameters.
+	 */
 	public void processWorkflow() {
-		
+
 		System.out.println("Start Process with the following parameters: ");
 		System.out.println("Classifier: " + config.getClassifier());
 		System.out.println("Weight: " + config.getWeight());
 		System.out.println("Feature: " + config.getFeature());
-		
+
 		// Step 1: Import Data
 		importData();
 		Map<String, Tool> tools = tsvParser.getTools();
+		Map<String, String> wikiArticles = tsvParser.getWikiArticles();
 
-		// Step 2: create model
-		Model model = createModel(tools);
+		// Step 2: run actual work flow process
+		runClassificationProcess(tools, wikiArticles);
 
-		// Step 3: calculate weight
-		BOWContainer weightedBOW = calculateWeight(model.getBagOfWordList());
-
-		// Step 4: initialize WEKA Handler
-		initWekaHandler(weightedBOW);
-
-		// Step 5: run training and testing
-		wekaHandler.processTestClassification();
-
-		// Step 6: Show results of classification
-		wekaHandler.showTestResult();
-		
 		System.out.println("======================================================");
 		System.out.println("========================   END   =====================");
 		System.out.println("======================================================");
 		System.out.println();
 	}
-	
+
+	/**
+	 * runs each configuration as a process.
+	 * 
+	 * @param config
+	 *            the configurations for processing the classification
+	 */
 	public void processWorkflow(List<Configuration> config) {
-		
-		//Step 1: Import data for all runs
+
+		// Step 1: Import data for all runs
 		importData();
+		Map<String, String> wikiArticles = tsvParser.getWikiArticles();
 		Map<String, Tool> tools = tsvParser.getTools();
-		
+
 		config.forEach((c) -> {
 			setConfig(c);
 			System.out.println("Start Process with the following parameters: ");
 			System.out.println("Classifier: " + c.getClassifier());
 			System.out.println("Weight: " + c.getWeight());
 			System.out.println("Feature: " + c.getFeature());
-			
-			// Step 2: Create Model
-			Model model = createModel(tools);
-			
-			System.out.println(model);
 
-			// Step 3: calculate weight
-//			BagOfWords weightedBOWList = calculateWeight(model.getBagOfWordList());
+			// Step 2: run actual work flow process
+			runClassificationProcess(tools, wikiArticles);
 
-//			// Step 4: initialize WEKA Handler
-//			initWekaHandler(weightedBOWList);
-
-			// Step 5: run training and testing
-			wekaHandler.processTestClassification();
-
-			// Step 6: Show results of classification
-			wekaHandler.showTestResult();
-			
 			System.out.println("======================================================");
 			System.out.println("========================   END   =====================");
 			System.out.println("======================================================");
 			System.out.println();
-			
+
 		});
 	}
 
-	private void importData() {
-		
+	/**
+	 * Actual classification process handling method. Needs the tools map and
+	 * Wikipedia articles to run classification with the previously set
+	 * configuration.
+	 * 
+	 * @param tools
+	 * @param wikiArticles
+	 */
+	private void runClassificationProcess(Map<String, Tool> tools, Map<String, String> wikiArticles) {
+		// Step 1: create bow model
+		BOWContainer bow = createBowModel(tools, wikiArticles);
+
+		// Step 2: calculate weight
+		BOWContainer weightedBOW = calculateWeight(bow);
+
+		// Step 3: initialize WEKA Handler
+		initWekaHandler(weightedBOW);
+
+		// Step 4: run training and testing
+		System.out.println("-- Start classification --");
+		wekaHandler.processTestClassification();
+		System.out.println("-- End classification --");
+
+		// Step 5: Show results of classification
+		wekaHandler.showTestResult();
+	}
+
+	/**
+	 * Calls importer for Wikipedia articles and tools
+	 */
+	public void importData() {
+		System.out.println("-- Start import --");
+
 		// import tools from TSV
 		if (tsvParser == null) {
 			tsvParser = new TsvParser();
-			System.out.println("-- Info: Tsv eingelesen --");
 		}
 		tsvParser.parseToolsTsv(toolsFile);
 		tsvParser.parseWikiArticles(wikiArticlesFile);
-		
-		// read index list
-		wikipediaIndex = WikiReader.readIndexFile(indexFile);
+		System.out.println("-- End import --");
 	}
 
-	private Model createModel(Map<String, Tool> tools) {
-		
+	/**
+	 * Calls preprocessing component for creating bag of words model
+	 * 
+	 * @param tools
+	 *            tools to process classification
+	 * @param wikiArticles
+	 *            Wikipedia articles for data enrichment
+	 * @return the bag of words based on tools and Wikipedia articles
+	 */
+	public BOWContainer createBowModel(Map<String, Tool> tools, Map<String, String> wikiArticles) {
+		System.out.println("-- Start creating bag of words model --");
 		// Create necessary feature
-		WordFeature feature = featureFactory.createFeature(config.getFeature());
-		
-		preprocessor = new Preprocessor(tools, feature, wikipediaIndex);
-		return preprocessor.createModel();
+		WordFeature feature = FeatureFactory.createFeature(config.getFeature());
 
+		preprocessor = new Preprocessor(tools, feature, wikiArticles);
+		System.out.println("-- End creating bag of words model --");
+		return preprocessor.createBowModel();
 	}
 
-	private BOWContainer calculateWeight(List<BagOfWords> bowList) {
-		
+	/**
+	 * Calls weight calculation components, based on the previously built bag of
+	 * words
+	 * 
+	 * @param bow
+	 *            the bag of words for tools
+	 * @return weighted bag of words
+	 */
+	public BOWContainer calculateWeight(BOWContainer bow) {
+		System.out.println("-- Start calculating weight --");
 		AbsoluteWeightCalculator weightCalc = null;
 		switch (config.getWeight()) {
 		case TFIDF:
-			weightCalc = new TFIDFCalculator(bowList);
+			weightCalc = new TFIDFCalculator(bow);
 			break;
 		case LOGLIKELIHOOD:
-			weightCalc = new LogLiklihoodCalculator(bowList);
+			weightCalc = new LogLiklihoodCalculator(bow);
 			break;
 		case ABSOLUTE:
-			weightCalc = new AbsoluteWeightCalculator(bowList);
+			weightCalc = new AbsoluteWeightCalculator(bow);
 			break;
 		default:
-			// TODO: Throw exception
 			System.out.println("ERROR: Unknown Weight!");
 
 		}
+		System.out.println("-- End calculating weight --");
 		return weightCalc.calculateWeight();
-
 	}
 
-	private void initWekaHandler(BOWContainer weightedBOW) {
+	/**
+	 * Executes initialization tasks for the classification component
+	 * 
+	 * @param weightedBOW
+	 *            the bag of words with weights
+	 */
+	public void initWekaHandler(BOWContainer weightedBOW) {
+		System.out.println("-- Start initializing classification --");
 		// Create class attribute list. Can be extracted from TSVParser
 		Set<Integer> parentClasses = tsvParser.getParentClasses();
 
@@ -177,11 +228,12 @@ public class WorkflowHandler {
 
 		// initialize WEKA handler
 		wekaHandler = new WEKAHandler("ToolContextDataSet", weightedBOW, classVal, config.getClassifier());
-		
+
 		// create model for classifier
 		wekaHandler.createWekaModel();
+		System.out.println("-- End initializing classification --");
 	}
-	
+
 	public void setConfig(Configuration config) {
 		this.config = config;
 	}

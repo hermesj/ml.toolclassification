@@ -18,7 +18,7 @@ public class WordFeature {
 	}
 	
 	public List<String> processWords(List<String> text) {
-		return null;
+		return text;
 	}
 	
 	public List<String> filterStopwords(List<String> featuredText){
